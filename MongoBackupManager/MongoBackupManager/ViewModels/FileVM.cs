@@ -18,8 +18,13 @@ namespace MongoBackupManager
                 {
                     _createdDate = value;
                     NotifyPropertyChanged("CreatedDate");
+                    NotifyPropertyChanged("CreatedDateStr");
                 }
             }
+        }
+        public string CreatedDateStr
+        {
+            get { return _createdDate.ToString("dd.MM.yyyy HH:mm"); }
         }
 
         private string _name;
