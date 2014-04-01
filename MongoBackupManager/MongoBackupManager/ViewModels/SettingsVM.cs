@@ -149,7 +149,7 @@ namespace MongoBackupManager
 
         private void getFiles()
         {
-            BackupFiles.Add(new FileVM { Name = "Lo", CreatedDate = DateTime.Now });
+            throw new NotImplementedException();
         }
         #endregion
         #region Properties
