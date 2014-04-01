@@ -7,12 +7,12 @@ using System.Windows;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("MongoBackupManager")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("Mongo DB Backup and Restore Manager")]
+[assembly: AssemblyDescription("A tool for quickly take backups for mongo db instances.")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("http://oguzkoroglu.net")]
 [assembly: AssemblyProduct("MongoBackupManager")]
-[assembly: AssemblyCopyright("Copyright ©  2014")]
+[assembly: AssemblyCopyright("Copyright © Oguz Koroglu 2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

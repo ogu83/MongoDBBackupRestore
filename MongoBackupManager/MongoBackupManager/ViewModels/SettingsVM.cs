@@ -12,14 +12,16 @@ namespace MongoBackupManager
     public class SettingsVM : VMPageBase
     {
         private DispatcherTimer _timer;
-        private const int _timerInterval = 1; //seconds
+        private const int _timerInterval = 1; //in seconds
         private Process _backupProcess;
         private bool _backuping = false;
 
         public SettingsVM()
         {
             wireCommands();
+            _backupFiles = new ObservableCollection<FileVM>();
         }
+
         public override void Initialize()
         {
             Host = "localhost";
@@ -38,6 +40,8 @@ namespace MongoBackupManager
             _backupProcess.ErrorDataReceived += _backupProcess_ErrorDataReceived;
             _backupProcess.Exited += _backupProcess_Exited;
             _backupProcess.OutputDataReceived += _backupProcess_OutputDataReceived;
+
+            getFiles();
 
             base.Initialize();
         }
@@ -91,13 +95,15 @@ namespace MongoBackupManager
                     _host, _port, _dbUserName, _dbPassword, _backupPath, DateTime.Now.ToString("ddMMyyyy")));
                 _backupProcess.Start();
 
-                MainVM.Instance.AddToLog("Executind Backup Command with Arguments: "
+                MainVM.Instance.AddToLog("Executing Backup Command with Arguments: "
                     + _backupProcess.StartInfo.Arguments);
 
                 _backupProcess.WaitForExit();
 
                 if (_isCompressOn)
                     compress();
+
+                getFiles();
             }
             catch (Exception ex)
             {
@@ -140,8 +146,12 @@ namespace MongoBackupManager
         {
             throw new NotImplementedException();
         }
-        #endregion
 
+        private void getFiles()
+        {
+            BackupFiles.Add(new FileVM { Name = "Lo", CreatedDate = DateTime.Now });
+        }
+        #endregion
         #region Properties
         private FileVM _selectedFile;
         public FileVM SelectedFile

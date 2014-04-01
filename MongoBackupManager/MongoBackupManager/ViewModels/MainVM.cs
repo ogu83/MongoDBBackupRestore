@@ -21,8 +21,8 @@ namespace MongoBackupManager
         #region Functions
         public void AddToLog(string value)
         {
-            Log = string.Format("{0} | {1}.{2}{3}",
-                DateTime.Now.ToString("dd.MM.yyyy hh.mm.ss"), value, LINE_BREAK, _log);
+            Log = string.Format("{0} | {1}.{2}{2}{3}",
+                DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"), value, LINE_BREAK, _log);
         }
         #endregion
         #region Properties
