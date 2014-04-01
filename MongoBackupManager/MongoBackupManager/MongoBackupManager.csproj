@@ -62,7 +62,7 @@
     </ApplicationDefinition>
     <Compile Include="Helpers\PasswordBoxAssistant.cs" />
     <Compile Include="Helpers\ZipHelper.cs" />
-    <Compile Include="MainVM.cs" />
+    <Compile Include="ViewModels\MainVM.cs" />
     <Compile Include="ViewModels\BaseCommand.cs" />
     <Compile Include="ViewModels\FileVM.cs" />
     <Compile Include="ViewModels\SettingsVM.cs" />
