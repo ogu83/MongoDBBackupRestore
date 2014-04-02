@@ -95,7 +95,7 @@ namespace MongoBackupManager
             CurrentTime = DateTime.Now;
             if (_isPeriodicBackupOn) //Means daily backup action is affect
             {
-                if (CurrentTime.Hour == 10 && CurrentTime.Minute == 15)
+                if (CurrentTime.Hour == 0 && CurrentTime.Minute == 0)
                 {
                     if (!_backuping)
                     {
