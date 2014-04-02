@@ -4,22 +4,16 @@ using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
 using System.Xml.Serialization;
-using System.Linq;
-using System.Windows;
 
 namespace MongoBackupManager
 {
     public class SettingsVM : VMPageBase
     {
-        private DispatcherTimer _timer;
-        private const int _timerInterval = 1; //in seconds
-        private Process _backupProcess;
-        private Process _restoreProcess;
-        private bool _backuping = false;
-
         public SettingsVM()
         {
             wireCommands();
@@ -31,6 +25,7 @@ namespace MongoBackupManager
             Host = "localhost";
             Port = "27017";
             MongodumpPath = @"C:\Program Files\MongoDB\bin\mongodump.exe";
+            MongorestorePath = @"C:\Program Files\MongoDB\bin\mongorestore.exe";
             BackupPath = @"C:\MongoDBBackup\";
             IsPeriodicBackupOn = true;
             IsCompressOn = true;
@@ -45,10 +40,16 @@ namespace MongoBackupManager
             _backupProcess.Exited += _backupProcess_Exited;
             _backupProcess.OutputDataReceived += _backupProcess_OutputDataReceived;
 
+            _restoreProcess = new Process();
+            _restoreProcess.ErrorDataReceived += _restoreProcess_ErrorDataReceived;
+            _restoreProcess.Exited += _restoreProcess_Exited;
+            _restoreProcess.OutputDataReceived += _restoreProcess_OutputDataReceived;
+
             getFiles();
 
             base.Initialize();
         }
+
         public override void Suspend()
         {
             _timer.Stop();
@@ -58,9 +59,24 @@ namespace MongoBackupManager
             _backupProcess.Exited -= _backupProcess_Exited;
             _backupProcess.OutputDataReceived -= _backupProcess_OutputDataReceived;
 
+            _restoreProcess.ErrorDataReceived -= _restoreProcess_ErrorDataReceived;
+            _restoreProcess.Exited -= _restoreProcess_Exited;
+            _restoreProcess.OutputDataReceived -= _restoreProcess_OutputDataReceived;
+
             base.Suspend();
         }
 
+        #region Variables
+        private DispatcherTimer _timer;
+        private const int _timerInterval = 1; //in seconds
+
+        private const string _fileDateExtFormatStr = "ddMMyy_HHmmss";
+
+        private Process _backupProcess;
+        private Process _restoreProcess;
+
+        private bool _backuping = false;
+        #endregion
         #region Commands
         [XmlIgnore]
         public ICommand BackupCommand { get; private set; }
@@ -79,7 +95,7 @@ namespace MongoBackupManager
             CurrentTime = DateTime.Now;
             if (_isPeriodicBackupOn) //Means daily backup action is affect
             {
-                if (CurrentTime.Hour == 0 && CurrentTime.Minute == 0)
+                if (CurrentTime.Hour == 10 && CurrentTime.Minute == 15)
                 {
                     if (!_backuping)
                     {
@@ -94,29 +110,42 @@ namespace MongoBackupManager
             }
         }
 
+        /// <summary>
+        /// Backup the MongoDB into a zip file
+        /// </summary>
+        /// <param name="param"></param>
         private void backup(object param)
         {
             try
             {
                 //--dbpath {4}
+                var path = string.Format("{1}{0}_{2}", _host, _backupPath, DateTime.Now.ToString(_fileDateExtFormatStr));
                 _backupProcess.StartInfo = new ProcessStartInfo(_mongodumpPath,
-                    string.Format("--host {0} --port {1} --username {2} --password {3} --out {4}{0}_{5}",
-                    _host, _port, _dbUserName, _dbPassword, _backupPath, DateTime.Now.ToString("ddMMyy_HHmmss")));
+                    string.Format("--host {0} --port {1} --username {2} --password {3} --out {4}",
+                    _host, _port, _dbUserName, _dbPassword, path));
                 _backupProcess.Start();
 
-                MainVM.Instance.AddToLog("Backup with arguments: "
-                    + _backupProcess.StartInfo.Arguments.Replace(_dbPassword, "*****"));
+                if (!string.IsNullOrEmpty(_dbPassword))
+                    MainVM.Instance.AddToLog("Backup started with arguments: "
+                        + _backupProcess.StartInfo.Arguments.Replace(_dbPassword, "*****"));
 
                 _backupProcess.WaitForExit();
 
-                if (_isCompressOn)
-                    compress();
+                MainVM.Instance.AddToLog("Backup Completed");
 
-                getFiles();
+                if (_isCompressOn)
+                {
+                    var fileName = string.Format("{0}.zip", path);
+                    compress(path, fileName);
+                }
             }
             catch (Exception ex)
             {
                 MainVM.Instance.AddToLog("Exception in backup: " + ex.Message);
+            }
+            finally
+            {
+                getFiles();
             }
         }
         void _backupProcess_OutputDataReceived(object sender, DataReceivedEventArgs e)
@@ -132,19 +161,60 @@ namespace MongoBackupManager
             MainVM.Instance.AddToLog("Backup Process Error: " + e.Data);
         }
 
+        /// <summary>
+        /// Restores the selected zip file to the mongoDB
+        /// </summary>
+        /// <param name="param"></param>
         private void restore(object param)
         {
             if (MessageBox.Show("Current data will be replaced with restored data, do you want to continue?", "Restore Confirm", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
             {
-                throw new NotImplementedException();
+                try
+                {
+                    //mongorestore --port <port number> <path to the backup>
+                    var path = decompress(_selectedFile.Path);
+                    _restoreProcess.StartInfo = new ProcessStartInfo(_mongorestorePath,
+                        string.Format("--host {0} --port {1} --username {2} --password {3} {4}",
+                        _host, _port, _dbUserName, _dbPassword, path));
+                    _restoreProcess.Start();
+
+                    if (!string.IsNullOrEmpty(_dbPassword))
+                        MainVM.Instance.AddToLog("Restore started with arguments: "
+                            + _restoreProcess.StartInfo.Arguments.Replace(_dbPassword, "*****"));
+
+                    _restoreProcess.WaitForExit();
+
+                    MainVM.Instance.AddToLog("Restore Completed");
+
+                    Directory.Delete(path, true);
+                }
+                catch (Exception ex)
+                {
+                    MainVM.Instance.AddToLog("Exception in restore: " + ex.Message);
+                }
+
             }
         }
-
-        private void compress()
+        void _restoreProcess_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
-            var zipPath = string.Format("{1}{0}_{2}", _host, _backupPath, DateTime.Now.ToString("ddMMyyyy"));
-            var fileName = string.Format("{1}{0}_{2}.zip", _host, _backupPath, DateTime.Now.ToString("ddMMyyyy"));
+            MainVM.Instance.AddToLog("Restore Process Output: " + e.Data);
+        }
+        void _restoreProcess_Exited(object sender, EventArgs e)
+        {
+            MainVM.Instance.AddToLog("Restore Process Exited");
+        }
+        void _restoreProcess_ErrorDataReceived(object sender, DataReceivedEventArgs e)
+        {
+            MainVM.Instance.AddToLog("Restore Process Error: " + e.Data);
+        }
 
+        /// <summary>
+        /// Compress the given file to a .zip
+        /// </summary>
+        /// <param name="zipPath">Full Path</param>
+        /// <param name="fileName">Full File Name</param>
+        private void compress(string zipPath, string fileName)
+        {
             ZipFile f = new ZipFile(fileName);
             f.AddDirectory(zipPath);
             f.CompressionLevel = CompressionLevel.BestCompression;
@@ -154,11 +224,23 @@ namespace MongoBackupManager
 
             MainVM.Instance.AddToLog("Compression Completed");
         }
-        private void decompress()
+        /// <summary>
+        /// Decompress the zip file and return the folder path
+        /// </summary>
+        /// <param name="filename">zip file name</param>
+        /// <returns></returns>
+        private string decompress(string filename)
         {
-            throw new NotImplementedException();
+            ZipFile f = new ZipFile(filename);
+            string folder = filename.Replace(".zip", "");
+            f.ExtractAll(folder);
+            MainVM.Instance.AddToLog("Decompression Completed");
+            return folder;
         }
 
+        /// <summary>
+        /// Get files in the backup folder
+        /// </summary>
         private void getFiles()
         {
             try
@@ -174,6 +256,10 @@ namespace MongoBackupManager
             }
         }
 
+        /// <summary>
+        /// Deletes the selected file
+        /// </summary>
+        /// <param name="param"></param>
         private void delete(object param)
         {
             if (MessageBox.Show("Backup file "
@@ -328,6 +414,20 @@ namespace MongoBackupManager
                 {
                     _mongodumpPath = value;
                     NotifyPropertyChanged("MongodumpPath");
+                }
+            }
+        }
+
+        private string _mongorestorePath;
+        public string MongorestorePath
+        {
+            get { return _mongorestorePath; }
+            set
+            {
+                if (value != _mongorestorePath)
+                {
+                    _mongorestorePath = value;
+                    NotifyPropertyChanged("MongorestorePath");
                 }
             }
         }

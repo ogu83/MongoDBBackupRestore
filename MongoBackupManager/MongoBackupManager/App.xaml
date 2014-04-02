@@ -6,7 +6,7 @@
 
         <RadialGradientBrush x:Key="MainBackground" Center="0.5, 0.5">
             <GradientStopCollection>
-                <GradientStop Color="#FF3C0505" Offset="0" />
+                <GradientStop Color="#FF480A0A" Offset="0" />
                 <GradientStop Color="Black" Offset="1.5" />
             </GradientStopCollection>
         </RadialGradientBrush>
@@ -23,6 +23,7 @@
             <Setter Property="Foreground" Value="Gray" />
             <Setter Property="Margin" Value="0,5,0,0" />
         </Style>
+
         <Style x:Key="T1" TargetType="TextBox">
             <Setter Property="FontSize" Value="13" />
             <Setter Property="Height" Value="Auto" />
@@ -34,10 +35,12 @@
             <Setter Property="TextWrapping" Value="Wrap" />
             <Setter Property="Background" Value="Gray" />
         </Style>
+
         <Style x:Key="P1" TargetType="PasswordBox">
             <Setter Property="FontSize" Value="13" />
             <Setter Property="Height" Value="Auto" />
         </Style>
+
         <Style x:Key="C1" TargetType="CheckBox">
             <Setter Property="Foreground" Value="White" />
             <Setter Property="Margin" Value="10" />
