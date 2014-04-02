@@ -1,13 +1,25 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
+using System.Windows;
+using System.Windows.Input;
 
 namespace MongoBackupManager
 {
     public class FileVM : VMBase
     {
+        public FileVM()
+        {
+            
+        }
+        public FileVM(FileInfo f)
+            : this()
+        {
+            Name = f.Name;
+            CreatedDate = f.CreationTime;
+            Path = f.FullName;
+        }
+        
+        #region Properties
         private DateTime _createdDate;
         public DateTime CreatedDate
         {
@@ -40,5 +52,20 @@ namespace MongoBackupManager
                 }
             }
         }
+
+        private string _path;
+        public string Path
+        {
+            get { return _path; }
+            set
+            {
+                if (value != _path)
+                {
+                    _path = value;
+                    NotifyPropertyChanged("Path");
+                }
+            }
+        }
+        #endregion
     }
 }
