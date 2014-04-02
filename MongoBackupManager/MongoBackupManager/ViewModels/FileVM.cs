@@ -7,10 +7,7 @@ namespace MongoBackupManager
 {
     public class FileVM : VMBase
     {
-        public FileVM()
-        {
-            
-        }
+        public FileVM() { }
         public FileVM(FileInfo f)
             : this()
         {
@@ -18,7 +15,7 @@ namespace MongoBackupManager
             CreatedDate = f.CreationTime;
             Path = f.FullName;
         }
-        
+
         #region Properties
         private DateTime _createdDate;
         public DateTime CreatedDate
