@@ -6,7 +6,7 @@
 
         <RadialGradientBrush x:Key="MainBackground" Center="0.5, 0.5">
             <GradientStopCollection>
-                <GradientStop Color="#FF230202" Offset="0" />
+                <GradientStop Color="#FF3C0505" Offset="0" />
                 <GradientStop Color="Black" Offset="1.5" />
             </GradientStopCollection>
         </RadialGradientBrush>

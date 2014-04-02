@@ -6,6 +6,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows.Input;
 using System.Windows.Threading;
+using System.Xml.Serialization;
+using System.Linq;
+using System.Windows;
 
 namespace MongoBackupManager
 {
@@ -14,6 +17,7 @@ namespace MongoBackupManager
         private DispatcherTimer _timer;
         private const int _timerInterval = 1; //in seconds
         private Process _backupProcess;
+        private Process _restoreProcess;
         private bool _backuping = false;
 
         public SettingsVM()
@@ -58,10 +62,15 @@ namespace MongoBackupManager
         }
 
         #region Commands
+        [XmlIgnore]
         public ICommand BackupCommand { get; private set; }
+        public ICommand RestoreCommand { get; private set; }
+        public ICommand DeleteCommand { get; private set; }
         private void wireCommands()
         {
             BackupCommand = new BaseCommand<object>(backup);
+            DeleteCommand = new BaseCommand<object>(delete);
+            RestoreCommand = new BaseCommand<object>(restore);
         }
         #endregion
         #region Functions
@@ -92,11 +101,11 @@ namespace MongoBackupManager
                 //--dbpath {4}
                 _backupProcess.StartInfo = new ProcessStartInfo(_mongodumpPath,
                     string.Format("--host {0} --port {1} --username {2} --password {3} --out {4}{0}_{5}",
-                    _host, _port, _dbUserName, _dbPassword, _backupPath, DateTime.Now.ToString("ddMMyyyy")));
+                    _host, _port, _dbUserName, _dbPassword, _backupPath, DateTime.Now.ToString("ddMMyy_HHmmss")));
                 _backupProcess.Start();
 
-                MainVM.Instance.AddToLog("Executing Backup Command with Arguments: "
-                    + _backupProcess.StartInfo.Arguments);
+                MainVM.Instance.AddToLog("Backup with arguments: "
+                    + _backupProcess.StartInfo.Arguments.Replace(_dbPassword, "*****"));
 
                 _backupProcess.WaitForExit();
 
@@ -125,7 +134,10 @@ namespace MongoBackupManager
 
         private void restore(object param)
         {
-            throw new NotImplementedException();
+            if (MessageBox.Show("Current data will be replaced with restored data, do you want to continue?", "Restore Confirm", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         private void compress()
@@ -149,11 +161,58 @@ namespace MongoBackupManager
 
         private void getFiles()
         {
-            throw new NotImplementedException();
+            try
+            {
+                DirectoryInfo dirInfo = new DirectoryInfo(BackupPath);
+                var files = dirInfo.GetFiles("*.zip");
+                var bFiles = files.Select(f => new FileVM(f));
+                BackupFiles = new ObservableCollection<FileVM>(bFiles);
+            }
+            catch (Exception ex)
+            {
+                MainVM.Instance.AddToLog("Error while gettin backup files: " + ex.Message);
+            }
+        }
+
+        private void delete(object param)
+        {
+            if (MessageBox.Show("Backup file "
+                + _selectedFile.Name
+                + " will be deleted permanently, do you want to continue?", "Delete Confirm", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    File.Delete(_selectedFile.Path);
+                }
+                catch (Exception ex)
+                {
+                    MainVM.Instance.AddToLog("Error in delete file:" + ex.Message);
+                }
+                finally
+                {
+                    getFiles();
+                }
+            }
         }
         #endregion
         #region Properties
+        private bool _isFileSelected;
+        [XmlIgnore]
+        public bool IsFileSelected
+        {
+            get { return _isFileSelected; }
+            set
+            {
+                if (value != _isFileSelected)
+                {
+                    _isFileSelected = value;
+                    NotifyPropertyChanged("IsFileSelected");
+                }
+            }
+        }
+
         private FileVM _selectedFile;
+        [XmlIgnore]
         public FileVM SelectedFile
         {
             get { return _selectedFile; }
@@ -163,11 +222,13 @@ namespace MongoBackupManager
                 {
                     _selectedFile = value;
                     NotifyPropertyChanged("SelectedFile");
+                    IsFileSelected = _selectedFile != null;
                 }
             }
         }
 
         private ObservableCollection<FileVM> _backupFiles;
+        [XmlIgnore]
         public ObservableCollection<FileVM> BackupFiles
         {
             get { return _backupFiles; }
@@ -182,6 +243,7 @@ namespace MongoBackupManager
         }
 
         private DateTime _currentTime;
+        [XmlIgnore]
         public DateTime CurrentTime
         {
             get { return _currentTime; }

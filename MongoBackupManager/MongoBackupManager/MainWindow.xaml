@@ -28,8 +28,6 @@
                 <RowDefinition />
             </Grid.RowDefinitions>
             <Button Grid.Row="0" Grid.Column="0" Content="Backup" Margin="2" Command="{Binding BackupCommand}" />
-            <Button Grid.Row="0" Grid.Column="1" Content="Restore" Margin="2" Command="{Binding RestoreCommand}" />
-            <Button Grid.Row="0" Grid.Column="2" Content="Delete" Margin="2" Command="{Binding DeleteCommand}" />
         </Grid>
 
         <DataGrid Grid.Row="1" Background="Transparent" 
@@ -38,11 +36,17 @@
                   ItemsSource="{Binding BackupFiles, Mode=OneWay}"
                   SelectedItem="{Binding SelectedFile, Mode=TwoWay}">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Created Date" SortDirection="Descending" CanUserSort="True" 
+                <DataGridTextColumn Header="Created" SortDirection="Descending" CanUserSort="True" 
                                     SortMemberPath="{Binding CreatedDate}" Binding="{Binding CreatedDateStr}" />
                 <DataGridTextColumn Header="File Name" SortDirection="Descending" CanUserSort="True" Width="1*"
                                     SortMemberPath="{Binding Name}" Binding="{Binding Name}" />
             </DataGrid.Columns>
+            <DataGrid.ContextMenu>
+                <ContextMenu IsEnabled="{Binding IsFileSelected}">
+                    <MenuItem Command="{Binding RestoreCommand}" Header="Restore" />
+                    <MenuItem Command="{Binding DeleteCommand}"  Header="Delete" />
+                </ContextMenu>
+            </DataGrid.ContextMenu>
         </DataGrid>
 
         <TextBox Grid.Row="2" Text="{Binding Log}" 

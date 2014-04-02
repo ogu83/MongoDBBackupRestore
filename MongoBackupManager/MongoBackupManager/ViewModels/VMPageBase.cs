@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Xml.Serialization;
 
 namespace MongoBackupManager
 {
     public abstract class VMPageBase : VMBase
     {
         private bool _isBusy;
+        [XmlIgnore]
         public bool IsBusy
         {
             get { return _isBusy; }
