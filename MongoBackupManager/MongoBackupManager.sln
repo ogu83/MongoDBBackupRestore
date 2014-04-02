@@ -3,6 +3,14 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MongoBackupManager", "MongoBackupManager\MongoBackupManager.csproj", "{77081415-4543-4C44-8983-09737DB7BEB2}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documents", "Documents", "{493CCEE8-4ACE-452D-8C1A-C2FAE251A362}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Screenshots", "Screenshots", "{A715DF4C-7E06-4C83-81B1-1A0BB1B831AC}"
+	ProjectSection(SolutionItems) = preProject
+		001.png = 001.png
+		002.png = 002.png
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(TeamFoundationVersionControl) = preSolution
 		SccNumberOfProjects = 2
@@ -25,5 +33,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A715DF4C-7E06-4C83-81B1-1A0BB1B831AC} = {493CCEE8-4ACE-452D-8C1A-C2FAE251A362}
 	EndGlobalSection
 EndGlobal
