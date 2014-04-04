@@ -13,7 +13,7 @@ using System.Xml.Serialization;
 namespace MongoBackupManager
 {
     public class SettingsVM : VMPageBase
-    {
+    {       
         public SettingsVM()
         {
             wireCommands();
@@ -22,13 +22,17 @@ namespace MongoBackupManager
 
         public override void Initialize()
         {
-            Host = "localhost";
-            Port = "27017";
-            MongodumpPath = @"C:\Program Files\MongoDB\bin\mongodump.exe";
-            MongorestorePath = @"C:\Program Files\MongoDB\bin\mongorestore.exe";
-            BackupPath = @"C:\MongoDBBackup\";
-            IsPeriodicBackupOn = true;
-            IsCompressOn = true;
+            if (!IsPropertiesInitialized)
+            {
+                Host = "localhost";
+                Port = "27017";
+                MongodumpPath = @"C:\Program Files\MongoDB\bin\mongodump.exe";
+                MongorestorePath = @"C:\Program Files\MongoDB\bin\mongorestore.exe";
+                BackupPath = @"C:\MongoDBBackup\";
+                IsPeriodicBackupOn = true;
+                IsCompressOn = true;
+                IsPropertiesInitialized = true;
+            }
 
             _timer = new DispatcherTimer();
             _timer.Interval = TimeSpan.FromSeconds(_timerInterval);
@@ -49,7 +53,6 @@ namespace MongoBackupManager
 
             base.Initialize();
         }
-
         public override void Suspend()
         {
             _timer.Stop();
@@ -63,10 +66,17 @@ namespace MongoBackupManager
             _restoreProcess.Exited -= _restoreProcess_Exited;
             _restoreProcess.OutputDataReceived -= _restoreProcess_OutputDataReceived;
 
+            Save();
+
             base.Suspend();
         }
 
         #region Variables
+        private static string _settingsFilePath
+        {
+            get { return string.Format("{0}\\{1}", _appDataFolder, "MongoDBBackupManagerSettings.xml"); }
+        }
+
         private DispatcherTimer _timer;
         private const int _timerInterval = 1; //in seconds
 
@@ -75,12 +85,14 @@ namespace MongoBackupManager
         private Process _backupProcess;
         private Process _restoreProcess;
 
-        private bool _backuping = false;
+        private bool _backuping;
         #endregion
         #region Commands
         [XmlIgnore]
         public ICommand BackupCommand { get; private set; }
+        [XmlIgnore]
         public ICommand RestoreCommand { get; private set; }
+        [XmlIgnore]
         public ICommand DeleteCommand { get; private set; }
         private void wireCommands()
         {
@@ -280,8 +292,23 @@ namespace MongoBackupManager
                 }
             }
         }
+
+        public void Save()
+        {
+            saveAsXmlAsync<SettingsVM>(_settingsFilePath);
+        }
+        public static SettingsVM Load()
+        {
+            if (File.Exists(SettingsVM._settingsFilePath))
+                return SettingsVM.loadXmlFileAsync<SettingsVM>(SettingsVM._settingsFilePath);
+            else
+                return null;
+        }
         #endregion
         #region Properties
+        [XmlIgnore]
+        public bool IsPropertiesInitialized { get; set; }
+
         private bool _isFileSelected;
         [XmlIgnore]
         public bool IsFileSelected
