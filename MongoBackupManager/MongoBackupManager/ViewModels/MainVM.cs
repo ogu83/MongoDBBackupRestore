@@ -14,8 +14,19 @@ namespace MongoBackupManager
 
         public override void Initialize()
         {
-            _settings.Initialize();
+            Settings = SettingsVM.Load();
+            if (Settings == null)
+                Settings = new SettingsVM();
+            else
+                Settings.IsPropertiesInitialized = true;
+
+            Settings.Initialize();
             base.Initialize();
+        }
+        public override void Suspend()
+        {
+            Settings.Suspend();
+            base.Suspend();
         }
 
         #region Functions

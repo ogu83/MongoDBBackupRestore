@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using xml = System.Xml;
@@ -13,7 +11,8 @@ namespace MongoBackupManager
 {
     public abstract class VMBase : INotifyPropertyChanged
     {
-        public static string LINE_BREAK = "\r\n";
+        protected static string LINE_BREAK = "\r\n";
+        protected static string _appDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
         #region XML
         protected async Task<string> toXmlString<T>() where T : VMBase
@@ -62,7 +61,7 @@ namespace MongoBackupManager
         protected static T fromXmlBytes<T>(byte[] xmlBytes) where T : VMBase
         {
             xmlser.XmlSerializer ser = new xmlser.XmlSerializer(typeof(T));
-            using (MemoryStream stream = new MemoryStream())
+            using (MemoryStream stream = new MemoryStream(xmlBytes))
                 return ser.Deserialize(stream) as T;
         }
         #endregion
