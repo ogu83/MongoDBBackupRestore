@@ -1,10 +1,16 @@
 ﻿using System;
+using System.IO;
 
 namespace MongoBackupManager
 {
     public class MainVM : VMPageBase
     {
         public static MainVM Instance { get; private set; }
+        
+        private static string _logFilePath
+        {
+            get { return string.Format("{0}\\{1}", _appDataFolder, "MongoDBBackupLog.txt"); }
+        }
 
         public MainVM()
         {
@@ -20,11 +26,23 @@ namespace MongoBackupManager
             else
                 Settings.IsPropertiesInitialized = true;
 
+            try
+            {
+                if (File.Exists(_logFilePath))
+                    Log = File.ReadAllText(_logFilePath);
+            }
+            catch (Exception ex)
+            {
+                AddToLog(string.Format("Getting file: {0}, Error: {1}", _logFilePath, ex.Message));
+            }
+
             Settings.Initialize();
             base.Initialize();
         }
         public override void Suspend()
         {
+            File.WriteAllText(_logFilePath, Log);
+
             Settings.Suspend();
             base.Suspend();
         }

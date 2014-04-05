@@ -2,9 +2,7 @@
         xmlns:local="clr-namespace:MongoBackupManager"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Icon="Images/app.ico"
-        Title="{Binding AppTitle, Mode=OneTime}" 
-        Height="600" Width="800">
+        Icon="Images/app.ico" Title="{Binding AppTitle, Mode=OneTime}" Height="600" Width="800">
     <Grid Background="{StaticResource MainBackground}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="4*" />
@@ -18,7 +16,7 @@
         <GridSplitter HorizontalAlignment="Left" Grid.Column="1" Grid.RowSpan="3" Grid.Row="0" 
                       VerticalAlignment="Stretch" Width="5"/>
 
-        <Grid DataContext="{Binding Settings}">
+        <Grid x:Name="grdButtons"  DataContext="{Binding Settings}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition />
                 <ColumnDefinition />
@@ -31,8 +29,8 @@
             <Button Grid.Row="0" Grid.Column="0" Content="Backup" Margin="2" Command="{Binding BackupCommand}" />
         </Grid>
 
-        <DataGrid Grid.Row="1" Background="Transparent" Margin="2" 
-                  AutoGenerateColumns="False" CanUserAddRows="False" CanUserResizeRows="False" CanUserResizeColumns="False"
+        <DataGrid x:Name="grdFiles" Grid.Row="1" Background="Transparent" Margin="2" 
+                  AutoGenerateColumns="False" CanUserAddRows="False" CanUserResizeRows="False" CanUserResizeColumns="False" IsReadOnly="True"
                   DataContext="{Binding Settings}" 
                   ItemsSource="{Binding BackupFiles, Mode=OneWay}"
                   SelectedItem="{Binding SelectedFile, Mode=TwoWay}">
@@ -50,15 +48,22 @@
             </DataGrid.ContextMenu>
         </DataGrid>
 
-        <TextBox Grid.Row="2" Text="{Binding Log}" 
+        <TextBox x:Name="txtLog" Grid.Row="2" Text="{Binding Log}" 
                  Margin="2" FontFamily="Lucida Console" 
                  TextWrapping="Wrap" Background="Transparent" Foreground="GreenYellow" IsReadOnly="True" 
                  VerticalScrollBarVisibility="Visible" FontSize="14" />
 
-        <ScrollViewer Grid.Column="1" Grid.RowSpan="3" 
+        <ScrollViewer x:Name="scrollSettings" Grid.Column="1" Grid.RowSpan="3" 
                       HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Visible">
             <Grid DataContext="{Binding Settings}" Margin="10,0,5,0">
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -107,23 +112,45 @@
                 <TextBlock Grid.Row="13" Text="Backup Path" Style="{StaticResource H2}" />
                 <TextBox Grid.Row="14" Text="{Binding BackupPath, Mode=TwoWay}" Style="{StaticResource T1}" />
 
-                <CheckBox Grid.Row="15" Style="{StaticResource C1}" IsEnabled="False"
-                          IsChecked="{Binding IsCompressOn, Mode=TwoWay}">
+                <TextBlock Grid.Row="13" Text="Backup Path" Style="{StaticResource H2}" />
+                <TextBox Grid.Row="14" Text="{Binding BackupPath, Mode=TwoWay}" Style="{StaticResource T1}" />
+
+                <Button Grid.Row="15" Margin="0,10" Content="Test Connection" Command="{Binding TestConnectionCommand}" />
+
+                <TextBlock Grid.Row="16" Text="Include Database(s) to Backup" Style="{StaticResource H2}" />
+                <DataGrid Grid.Row="17"
+                    AutoGenerateColumns="False" CanUserAddRows="False" CanUserResizeRows="False" CanUserResizeColumns="False" IsReadOnly="True"
+                    ItemsSource="{Binding DataBases, Mode=OneWay}">
+                    <DataGrid.Columns>
+                        <DataGridCheckBoxColumn Header="Select" SortDirection="Descending" CanUserSort="False" 
+                                            Binding="{Binding IsSelected,Mode=TwoWay, FallbackValue=True}" />
+                        <!--<DataGridTextColumn Header="Created" SortDirection="Descending" CanUserSort="True" 
+                                    SortMemberPath="{Binding CreatedDate}" Binding="{Binding CreatedDateStr}" />-->
+                        <DataGridTextColumn Header="File Name" SortDirection="Descending" CanUserSort="True" Width="1*"
+                                    SortMemberPath="{Binding Name}" Binding="{Binding Name}" />
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <TextBox Grid.Row="14" Text="{Binding BackupPath, Mode=TwoWay}" Style="{StaticResource T1}" />
+
+                <CheckBox Grid.Row="20" Style="{StaticResource C1}" IsEnabled="False"
+                          IsChecked="{Binding IsCompressOn, Mode=TwoWay, FallbackValue=True}">
                     <CheckBox.Content>
                         <TextBlock TextWrapping="Wrap">
                             Compress after backup (If selected backup folder will be compressed in a zip file [host]_[date].zip')
                         </TextBlock>
                     </CheckBox.Content>
                 </CheckBox>
-
-                <CheckBox Grid.Row="16" Style="{StaticResource C1}"
-                          IsChecked="{Binding IsPeriodicBackupOn, Mode=TwoWay}">
+                
+                <CheckBox Grid.Row="21" Style="{StaticResource C1}"
+                          IsChecked="{Binding IsPeriodicBackupOn, Mode=TwoWay,FallbackValue=True}">
                     <CheckBox.Content>
                         <TextBlock TextWrapping="Wrap">
                             Daily backup (If selected a backup every day at 00:00 will be created)
                         </TextBlock>
                     </CheckBox.Content>
                 </CheckBox>
+                
             </Grid>
         </ScrollViewer>
     </Grid>

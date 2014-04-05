@@ -1,5 +1,6 @@
 ﻿using Ionic.Zip;
 using Ionic.Zlib;
+using MongoDB.Driver;
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -13,11 +14,13 @@ using System.Xml.Serialization;
 namespace MongoBackupManager
 {
     public class SettingsVM : VMPageBase
-    {       
+    {
         public SettingsVM()
         {
             wireCommands();
+
             _backupFiles = new ObservableCollection<FileVM>();
+            _databases = new ObservableCollection<DatabaseVM>();
         }
 
         public override void Initialize()
@@ -25,7 +28,7 @@ namespace MongoBackupManager
             if (!IsPropertiesInitialized)
             {
                 Host = "localhost";
-                Port = "27017";
+                Port = 27017;
                 MongodumpPath = @"C:\Program Files\MongoDB\bin\mongodump.exe";
                 MongorestorePath = @"C:\Program Files\MongoDB\bin\mongorestore.exe";
                 BackupPath = @"C:\MongoDBBackup\";
@@ -94,11 +97,15 @@ namespace MongoBackupManager
         public ICommand RestoreCommand { get; private set; }
         [XmlIgnore]
         public ICommand DeleteCommand { get; private set; }
+        [XmlIgnore]
+        public ICommand TestConnectionCommand { get; private set; }
+
         private void wireCommands()
         {
             BackupCommand = new BaseCommand<object>(backup);
             DeleteCommand = new BaseCommand<object>(delete);
             RestoreCommand = new BaseCommand<object>(restore);
+            TestConnectionCommand = new BaseCommand<object>(testConnection);
         }
         #endregion
         #region Functions
@@ -123,17 +130,91 @@ namespace MongoBackupManager
         }
 
         /// <summary>
+        /// Tests the connection to the mongod instance at the host 
+        /// and gets the databases information at the instance
+        /// </summary>
+        /// <param name="param"></param>
+        void testConnection(object param)
+        {
+            MongoServer server = null;
+            try
+            {
+                if (string.IsNullOrEmpty(_host))
+                    throw new Exception("Host name required");
+                else if (_port == 0)
+                    throw new Exception("Port required");
+                else
+                {
+                    var crediantial = MongoCredential.CreateMongoCRCredential("admin", _dbUserName, _dbPassword);
+                    server = new MongoServer(new MongoServerSettings
+                    {
+                        Server = new MongoServerAddress(_host, _port),
+                        Credentials = new MongoCredential[] { crediantial }
+                    });
+                    MainVM.Instance.AddToLog(string.Format("Try to connect {0}:{1}", _host, _port));
+                    server.Connect();
+                    MainVM.Instance.AddToLog("Connection success, getting databases");
+                    var databaseNames = server.GetDatabaseNames();
+                    if (databaseNames != null)
+                    {
+                        var databases = databaseNames.Select(d => new DatabaseVM
+                        {
+                            Name = d,
+                            CreatedDate = DateTime.Now,
+                            IsSelected = true
+                        });
+                        DataBases = new ObservableCollection<DatabaseVM>(databases);
+                        MainVM.Instance.AddToLog(string.Format("{0} database found in the {1}", databaseNames.Count(), _host));
+                    }
+                    else
+                    {
+                        MainVM.Instance.AddToLog(string.Format("No database found in the {0}", databaseNames.Count()));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MainVM.Instance.AddToLog(string.Format("Error in Connection: {0}", ex.Message));
+            }
+            finally
+            {
+                if (server != null)
+                {
+                    server.Disconnect();
+                    MainVM.Instance.AddToLog(string.Format("Disconnected to the host: {0}", _host));
+                }
+            }
+        }
+
+        /// <summary>
         /// Backup the MongoDB into a zip file
         /// </summary>
         /// <param name="param"></param>
         private void backup(object param)
         {
+            if (AllDataBasesSelected)
+                backupInstance();
+            else
+            {
+                var selectedDatabases = DataBases.Where(d => d.IsSelected);
+                foreach (var d in selectedDatabases)
+                    backupInstance(d.Name);
+            }
+        }
+        private void backupInstance(string databaseName = "")
+        {
+            //--dbpath
             try
             {
-                //--dbpath {4}
-                var path = string.Format("{1}{0}_{2}", _host, _backupPath, DateTime.Now.ToString(_fileDateExtFormatStr));
+                var path = string.Format("{0}{1}_{2}{3}",
+                    _backupPath, _host, DateTime.Now.ToString(_fileDateExtFormatStr), databaseName);
+
+                var argumentString = "--host {0} --port {1} --username {2} --password {3} --out {4}";
+                if (!string.IsNullOrEmpty(databaseName))
+                    argumentString = string.Format("{0} -db {1}", argumentString, databaseName);
+
                 _backupProcess.StartInfo = new ProcessStartInfo(_mongodumpPath,
-                    string.Format("--host {0} --port {1} --username {2} --password {3} --out {4}",
+                    string.Format(argumentString,
                     _host, _port, _dbUserName, _dbPassword, path));
                 _backupProcess.Start();
 
@@ -142,6 +223,7 @@ namespace MongoBackupManager
                         + _backupProcess.StartInfo.Arguments.Replace(_dbPassword, "*****"));
 
                 _backupProcess.WaitForExit();
+                _backupProcess.Refresh();
 
                 MainVM.Instance.AddToLog("Backup Completed");
 
@@ -355,6 +437,31 @@ namespace MongoBackupManager
             }
         }
 
+        private ObservableCollection<DatabaseVM> _databases;
+        [XmlIgnore]
+        public ObservableCollection<DatabaseVM> DataBases
+        {
+            get { return _databases; }
+            set
+            {
+                if (value != _databases)
+                {
+                    _databases = value;
+                    NotifyPropertyChanged("DataBases");
+                }
+            }
+        }
+        public bool AllDataBasesSelected
+        {
+            get
+            {
+                if (DataBases.Count == 0)
+                    return true;
+                else
+                    return DataBases.All(d => d.IsSelected);
+            }
+        }
+
         private DateTime _currentTime;
         [XmlIgnore]
         public DateTime CurrentTime
@@ -473,8 +580,8 @@ namespace MongoBackupManager
             }
         }
 
-        private string _port;
-        public string Port
+        private int _port;
+        public int Port
         {
             get { return _port; }
             set
