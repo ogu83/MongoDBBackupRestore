@@ -2,7 +2,7 @@
 
 namespace MongoBackupManager
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         private MainVM _myVM;
 

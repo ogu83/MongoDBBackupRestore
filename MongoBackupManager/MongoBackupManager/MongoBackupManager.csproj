@@ -67,6 +67,9 @@
     <SignManifests>true</SignManifests>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Elysium">
+      <HintPath>..\packages\Elysium.Theme.2.0.4\lib\net45\Elysium.dll</HintPath>
+    </Reference>
     <Reference Include="Ionic.Zip">
       <HintPath>..\packages\DotNetZip.1.9.2\lib\net20\Ionic.Zip.dll</HintPath>
     </Reference>
@@ -104,6 +107,14 @@
     <Compile Include="ViewModels\SettingsVM.cs" />
     <Compile Include="ViewModels\VMBase.cs" />
     <Compile Include="ViewModels\VMPageBase.cs" />
+    <Page Include="Styles\ApplicationStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Styles\DataGridStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
