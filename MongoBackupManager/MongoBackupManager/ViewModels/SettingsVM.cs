@@ -312,6 +312,7 @@ namespace MongoBackupManager
             ZipFile f = new ZipFile(fileName);
             f.AddDirectory(zipPath);
             f.CompressionLevel = CompressionLevel.BestCompression;
+            f.UseZip64WhenSaving = Zip64Option.AsNecessary;
             f.Save();
 
             Directory.Delete(zipPath, true);
@@ -327,7 +328,7 @@ namespace MongoBackupManager
         {
             ZipFile f = new ZipFile(filename);
             string folder = filename.Replace(".zip", "");
-            f.ExtractAll(folder);
+            f.ExtractAll(folder);            
             MainVM.Instance.AddToLog("Decompression Completed");
             return folder;
         }
